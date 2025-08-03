@@ -1,0 +1,113 @@
+# TA-LAM Configuration File
+# Temporal-Attentive Latent Action Model Configuration
+
+# Model Architecture
+model:
+  name: "TA-LAM"
+  latent_action_dim: 512
+  history_length: 4
+  
+  # Input dimensions
+  input_dim: [3, 224, 224]  # (C, H, W)
+  proprioception_dim: 14     # Bimanual robot state
+  robot_action_dim: 14       # Bimanual robot action
+  
+  # IDM Configuration
+  idm:
+    d_model: 768
+    nhead: 8
+    num_layers: 6
+    dim_feedforward: 2048
+    dropout: 0.1
+    
+    # SigLIP Configuration
+    siglip_model: "google/siglip-base-patch16-224"
+    freeze_siglip: true
+    attention_temperature: 1.0
+    num_views: 2  # Multi-view cameras
+    
+    # Temporal Encoding
+    d_gamma: 128     # Absolute temporal encoding dimension
+    d_pe: 128        # Relative positional encoding dimension
+    max_episode_length: 1000
+    
+  # FDM Configuration  
+  fdm:
+    hidden_dims: [1024, 512, 256]
+    activation: "relu"
+    dropout: 0.1
+    batch_norm: true
+    
+  # Action Decoder Configuration
+  action_decoder:
+    hidden_dims: [256, 128]
+    activation: "relu"
+    dropout: 0.0
+    batch_norm: false
+
+# Training Configuration
+training:
+  # Loss weights
+  lambda_action: 1.0
+  
+  # Optimization
+  learning_rate: 1e-4
+  weight_decay: 1e-5
+  batch_size: 32
+  num_epochs: 100
+  
+  # Scheduler
+  scheduler:
+    type: "cosine"
+    warmup_steps: 1000
+    
+  # Data
+  max_sequence_length: 16
+  image_augmentation: true
+  
+# Data Configuration
+data:
+  # Pre-training datasets
+  pretrain_datasets:
+    - name: "unlabeled_videos" 
+      path: "/path/to/unlabeled/videos"
+      weight: 1.0
+      use_reconstruction_loss: true
+      use_action_loss: false
+      
+    - name: "robot_trajectories"
+      path: "/path/to/robot/data" 
+      weight: 1.0
+      use_reconstruction_loss: true
+      use_action_loss: true
+      
+    - name: "simulation_data"
+      path: "/path/to/simulation/data"
+      weight: 0.5
+      use_reconstruction_loss: true
+      use_action_loss: true
+      
+  # Data processing
+  image_size: 224
+  normalization:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    
+# Logging and Checkpointing
+logging:
+  log_interval: 100
+  eval_interval: 1000
+  save_interval: 5000
+  
+  # Wandb configuration
+  wandb:
+    project: "LatentVLA"
+    entity: "your_entity"
+    name: "ta_lam_stage1"
+    
+# Hardware Configuration
+hardware:
+  device: "cuda"
+  num_gpus: 1
+  mixed_precision: true
+  compile_model: false  # PyTorch 2.0 compilation
